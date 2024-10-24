@@ -7,21 +7,42 @@ use clap::Parser;
 #[command(version = "0.1")]
 #[command(about = "Build tool for TrainingMode-More", long_about = None)]
 struct Cli {
-    #[arg(short = 'l', value_name = "FILE", help = "Link file")]
+    #[arg(short = 'l', long = "link", value_name = "FILE", help = "Link file")]
     link: PathBuf,
 
-    #[arg(short = 't', value_name = "FILE", help = "Symbol table file")]
+    #[arg(
+        short = 't',
+        long = "table",
+        value_name = "FILE",
+        help = "Symbol table file"
+    )]
     symbol_table: PathBuf,
 
-    #[arg(short = 'd', value_name = "FILE", help = ".dat file")]
+    #[arg(short = 'd', long = "dat", value_name = "DAT", help = ".dat file")]
     dat: PathBuf,
 
-    #[arg(short = 's', value_name = "SYMBOL", help = "Symbol name")]
+    #[arg(
+        short = 's',
+        long = "symbol",
+        value_name = "SYMBOL",
+        help = "Symbol name",
+        default_value = "evFunction"
+    )]
     symbol: String,
 
+    #[arg(
+        short = 'b',
+        long = "build",
+        value_name = "DIR",
+        help = "Build directory",
+        default_value = "build"
+    )]
+    build_dir: PathBuf,
+
+    #[arg(required(true), help = "File(s) to compile")]
     files: Vec<PathBuf>,
 
-    #[arg(last = true)]
+    #[arg(last = true, help = "Flags passed to gcc")]
     gcc_flags: Vec<String>,
 }
 
@@ -86,6 +107,7 @@ fn main() {
     println!("symbol_table: {:?}", args.symbol_table);
     println!("dat: {:?}", args.dat);
     println!("symbol: {:?}", args.symbol);
+    println!("build_dir: {:?}", args.build_dir);
     println!("files: {:?}", args.files);
     println!("gcc flags: {:?}", args.gcc_flags);
 
