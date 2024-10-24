@@ -14,9 +14,9 @@ struct Cli {
         short = 't',
         long = "table",
         value_name = "FILE",
-        help = "Symbol table file"
+        help = "Function table file"
     )]
-    symbol_table: PathBuf,
+    function_table: PathBuf,
 
     #[arg(short = 'd', long = "dat", value_name = "DAT", help = ".dat file")]
     dat: PathBuf,
@@ -121,7 +121,7 @@ fn main() {
     let args = Cli::parse();
 
     println!("link: {:?}", args.link);
-    println!("symbol_table: {:?}", args.symbol_table);
+    println!("function_table: {:?}", args.function_table);
     println!("dat: {:?}", args.dat);
     println!("symbol: {:?}", args.symbol);
     println!("build_dir: {:?}", args.build_dir);
@@ -136,5 +136,14 @@ fn main() {
         process::exit(1);
     }
 
-    println!("links: {:?}", links);
+    let _functions: Vec<String> = match std::fs::read_to_string(&args.function_table) {
+        Ok(s) => s.lines().map(str::to_string).collect(),
+        Err(e) => {
+            eprintln!(
+                "Could not read function table file {:?}: {}",
+                args.function_table, e
+            );
+            process::exit(1);
+        }
+    };
 }
