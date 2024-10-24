@@ -186,4 +186,14 @@ fn main() {
             .expect("failed to execute child process");
         objs.push(obj_file);
     }
+
+    // 2. partially link object files to ouput.o
+    let reloc_obj = args.build_dir.join("output.o");
+    Command::new(&gcc_path)
+        .arg("-r")
+        .args(objs.iter())
+        .arg("-o")
+        .arg(&reloc_obj)
+        .output()
+        .expect("failed to execute child process");
 }
