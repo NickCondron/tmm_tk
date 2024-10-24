@@ -1,3 +1,4 @@
+use std::process::{Child, Command};
 #[allow(unused_variables)]
 use std::{env, ffi::OsStr, fs, path::PathBuf, process};
 
@@ -101,7 +102,7 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
     }
 }
 
-fn create_build_dir(dir: PathBuf) {
+fn create_build_dir(dir: &PathBuf) {
     if dir.exists() {
         if !dir.is_dir() {
             eprintln!("Error: {:?} is not a directory", dir);
@@ -158,6 +159,31 @@ fn main() {
         }
     };
 
-    create_build_dir(args.build_dir);
+    create_build_dir(&args.build_dir);
     let gcc_path = get_gcc_path();
+
+    // 1. compile inputs to object files (*.o)
+    let mut objs: Vec<PathBuf> = Vec::new();
+    for file in args.files.iter() {
+        if file.extension().map(OsStr::to_string_lossy) != Some("c".into()) {
+            // MexTK allows .o inputs but I see no reason to for now
+            eprintln!("Error: received nonsource input file: {:?}", file);
+            process::exit(1);
+        }
+        let obj_file = args
+            .build_dir
+            .join(file.file_name().unwrap())
+            .with_extension("o");
+
+        Command::new(&gcc_path)
+            .args(args.gcc_flags.iter())
+            .args(["-DGEKKO", "-mogc", "-mcpu=750", "-meabi", "-mhard-float"])
+            .arg("-c")
+            .arg(file)
+            .arg("-o")
+            .arg(&obj_file)
+            .output()
+            .expect("failed to execute child process");
+        objs.push(obj_file);
+    }
 }
