@@ -1,4 +1,5 @@
-use std::{ffi::OsStr, fs, path::PathBuf, process};
+#[allow(unused_variables)]
+use std::{env, ffi::OsStr, fs, path::PathBuf, process};
 
 use clap::Parser;
 
@@ -100,21 +101,35 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
     }
 }
 
-fn create_build_dir(dir: PathBuf) -> bool {
+fn create_build_dir(dir: PathBuf) {
     if dir.exists() {
         if !dir.is_dir() {
             eprintln!("Error: {:?} is not a directory", dir);
-            return false;
+            process::exit(1);
         }
         // directory already exists
-        return true;
     }
     if let Err(e) = fs::create_dir_all(&dir) {
         eprintln!("Error creating directory {:?}: {}", dir, e);
-        return false;
+        process::exit(1);
     }
     println!("Created build directory {:?}", dir);
-    return true;
+}
+
+fn get_gcc_path() -> PathBuf {
+    if cfg!(target_os = "windows") {
+        // TODO more robust solution
+        PathBuf::from("C:/devkitpro/devkitPPC/bin/powerpc-eabi-gcc.exe")
+    } else {
+        // Linux
+        match env::var("DEVKITPRO") {
+            Ok(path) => PathBuf::from(path).join("devkitPPC/bin/powerpc-eabi-gcc"),
+            Err(e) => {
+                eprintln!("Failed to retrieve DEVKITPRO env variable: {}", e);
+                process::exit(1);
+            }
+        }
+    }
 }
 
 fn main() {
@@ -128,15 +143,11 @@ fn main() {
     println!("files: {:?}", args.files);
     println!("gcc flags: {:?}", args.gcc_flags);
 
-    let Some(links) = parse_link_file(args.link) else {
+    let Some(_links) = parse_link_file(args.link) else {
         process::exit(1);
     };
 
-    if !create_build_dir(args.build_dir) {
-        process::exit(1);
-    }
-
-    let _functions: Vec<String> = match std::fs::read_to_string(&args.function_table) {
+    let functions: Vec<String> = match std::fs::read_to_string(&args.function_table) {
         Ok(s) => s.lines().map(str::to_string).collect(),
         Err(e) => {
             eprintln!(
@@ -146,4 +157,7 @@ fn main() {
             process::exit(1);
         }
     };
+
+    create_build_dir(args.build_dir);
+    let gcc_path = get_gcc_path();
 }
