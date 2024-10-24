@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, path::PathBuf, process};
+use std::{ffi::OsStr, fs, path::PathBuf, process};
 
 use clap::Parser;
 
@@ -100,6 +100,23 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
     }
 }
 
+fn create_build_dir(dir: PathBuf) -> bool {
+    if dir.exists() {
+        if !dir.is_dir() {
+            eprintln!("Error: {:?} is not a directory", dir);
+            return false;
+        }
+        // directory already exists
+        return true;
+    }
+    if let Err(e) = fs::create_dir_all(&dir) {
+        eprintln!("Error creating directory {:?}: {}", dir, e);
+        return false;
+    }
+    println!("Created build directory {:?}", dir);
+    return true;
+}
+
 fn main() {
     let args = Cli::parse();
 
@@ -112,9 +129,12 @@ fn main() {
     println!("gcc flags: {:?}", args.gcc_flags);
 
     let Some(links) = parse_link_file(args.link) else {
-        // error message printed by the function
         process::exit(1);
     };
+
+    if !create_build_dir(args.build_dir) {
+        process::exit(1);
+    }
 
     println!("links: {:?}", links);
 }
