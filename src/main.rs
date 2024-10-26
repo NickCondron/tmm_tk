@@ -1,6 +1,6 @@
-use std::process::{Child, Command};
-#[allow(unused_variables)]
-use std::{env, ffi::OsStr, fs, path::PathBuf, process};
+#[allow(unused_variables, dead_code)]
+use std::process::Command;
+use std::{collections::HashMap, env, ffi::OsStr, fs, path::PathBuf, process};
 
 use clap::Parser;
 
@@ -48,11 +48,7 @@ struct Cli {
     gcc_flags: Vec<String>,
 }
 
-#[derive(Clone, Debug)]
-struct Links {
-    addresses: Vec<u32>,
-    names: Vec<String>,
-}
+type Links = HashMap<String, u32>;
 
 fn parse_link_file(path: PathBuf) -> Option<Links> {
     match path.extension().map(OsStr::to_string_lossy) {
@@ -70,10 +66,7 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
             return None;
         }
         Ok(text) => {
-            let mut links = Links {
-                addresses: Vec::new(),
-                names: Vec::new(),
-            };
+            let mut links = Links::new();
             for (i, line) in text.lines().enumerate() {
                 let Some((address_str, name)) = line.split_once(":") else {
                     eprintln!("Error: Failed to parse link file line {}: {}", i + 1, line);
@@ -94,8 +87,10 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
                         address_str
                     );
                 }
-                links.addresses.push(address);
-                links.names.push(name.to_string());
+                if links.insert(name.to_string(), address).is_some() {
+                    eprintln!("Error: duplicate link entry {}", name);
+                    process::exit(1);
+                }
             }
             Some(links)
         }
