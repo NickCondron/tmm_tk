@@ -1,6 +1,13 @@
 #[allow(unused_variables, dead_code)]
 use std::process::Command;
-use std::{collections::HashMap, env, ffi::OsStr, fs, path::PathBuf, process};
+use std::{
+    collections::{HashMap, HashSet},
+    env,
+    ffi::OsStr,
+    fs,
+    path::PathBuf,
+    process,
+};
 
 use clap::Parser;
 
@@ -60,6 +67,7 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
         }
         _ => {}
     }
+    let mut addresses: HashSet<u32> = HashSet::new();
     match std::fs::read_to_string(&path) {
         Err(e) => {
             eprintln!("Error opening file {:?}: {}", path, e);
@@ -90,6 +98,13 @@ fn parse_link_file(path: PathBuf) -> Option<Links> {
                 if links.insert(name.to_string(), address).is_some() {
                     eprintln!("Error: duplicate link entry {}", name);
                     process::exit(1);
+                }
+                if !addresses.insert(address) {
+                    eprintln!(
+                        "Warning: duplicate link address on link file line {}: {}",
+                        i + 1,
+                        address_str
+                    );
                 }
             }
             Some(links)
